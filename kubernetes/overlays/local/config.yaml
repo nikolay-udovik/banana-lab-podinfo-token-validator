@@ -1,0 +1,15 @@
+log:
+  level: release
+  format: json
+
+podinfo:
+  base_url: "http://podinfo-backend:9898"
+  token_endpoint: "/token"
+  token_validate: "/token/validate"
+  cache_endpoint: "/cache/validation_result"
+
+redis:
+  host: "podinfo-backend-redis"
+  port: 6379
+  password: ""
+  validation_result_key: "validation_result"

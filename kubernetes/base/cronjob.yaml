@@ -1,0 +1,36 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: podinfo-token-validator
+  labels:
+    app: podinfo-token-validator
+spec:
+  schedule: "*/5 * * * *"
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: podinfo-token-validator
+        spec:
+          containers:
+            - name: podinfo-token-validator
+              image: podinfo-token-validator:0.0.1
+              args:
+              - "-config"
+              - "/etc/configs/config.yaml"
+              volumeMounts:
+              - name: config-volume
+                mountPath: /etc/configs/
+              resources:
+                limits:
+                  memory: "100Mi"
+                  cpu: "100m"
+                requests:
+                  memory: "50Mi"
+                  cpu: "50m"
+          volumes:
+            - name: config-volume
+              configMap: 
+                name: podinfo-token-validator-cm
+          restartPolicy: OnFailure

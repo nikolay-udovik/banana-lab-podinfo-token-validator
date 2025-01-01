@@ -1,0 +1,149 @@
+version: '3'
+
+vars:
+  VERSION: 0.0.2
+  PROJECT_NAME: podinfo-token-validator
+  IMAGE_TAG_BASE: podinfo-token-validator
+  REGISTRY: docker.io
+  DOCKER_USER: drunkymonke
+  IMAGE_NAME: '{{.REGISTRY}}/{{.DOCKER_USER}}/{{.IMAGE_TAG_BASE}}:{{.VERSION}}'
+  CONTAINER_TOOL: docker
+  KIND_CLUSTER_NAME: bringg-local
+  GOBIN: '{{if .GOBIN}}{{.GOBIN}}{{else}}{{.GOPATH}}bin{{end}}'
+  MODULE_NAME: monkale.io/{{.PROJECT_NAME}}
+  BINARY_NAME: app
+tasks:
+  build:
+    desc: "Compile the application and place the binary in the GOBIN directory."
+    cmds:
+      - mkdir -p ./bin
+      - go build -o {{.GOBIN}}/{{.BINARY_NAME}} -v ./cmd/main.go
+
+  coverage:
+    desc: "Run the coverage test"
+    cmds:
+      - go test -coverprofile=coverage.out ./...
+
+  test:
+    desc: "Run the application in the background and execute tests."
+    status: ["none"]
+    cmds:
+      - task: podinfo-port-fwd-redis
+      - task: podinfo-port-fwd-back
+      - task: coverage
+      - pid=$(go run cmd/main.go & echo $!); echo "App running with PID $pid"
+      - go test -v ./...
+    #  - kill -9 $pid &> /dev/null || { true; echo test has completed; }
+
+  clean:
+    desc: "Remove binary files and clean up."
+    cmds:
+      - go clean
+      - rm -f {{.GOBIN}}/{{.BINARY_NAME}}
+
+  init:
+    desc: "Set up the module and directory structure."
+    cmds:
+      - mkdir -p {{.GOBIN}}
+      - go mod init {{.MODULE_NAME}}
+
+  deps:
+    desc: "Download and verify module dependencies."
+    status: ["none"]
+    cmds:
+      - go mod tidy
+      - go mod verify
+
+  run:
+    desc: "Run the main.go file."
+    status: ["none"]
+    cmds:
+      - task: podinfo-port-fwd-redis
+      - task: podinfo-port-fwd-back
+      - go run cmd/main.go
+
+  podinfo-port-fwd-redis:
+    desc: "Port-forward Redis service in the background."
+    status: ["none"]
+    vars:
+      service_name: podinfo-backend-redis
+      pub_ports: 26379:6379
+      namespace: demo
+    cmds:
+      - |
+        current_forward_pid=$(ps -ef | grep "^$USER" | grep "{{.pub_ports}}" | grep 'kubectl' | awk '{print $2}')
+        [[ ! -z "${current_forward_pid}" ]] && { kill ${current_forward_pid}; echo "Killed currently running forward"; }
+        nohup kubectl -n {{.namespace}} port-forward svc/{{.service_name}} {{.pub_ports}} --address='0.0.0.0' > $(mktemp) 2>&1 &
+        echo "Created a tunnel to service {{.service_name}}"
+
+  podinfo-redis-cli:
+    desc: "Verify Redis connection using redis-cli."
+    cmds:
+      - task: podinfo-port-fwd-redis
+      - sleep 3
+      - redis-cli -h 127.0.0.1 -p 26379
+
+  podinfo-port-fwd-back:
+    desc: "Port-forward Podinfo service in the background."
+    status: ["none"]
+    vars:
+      service_name: podinfo-backend
+      pub_ports: 29898:9898
+      namespace: demo
+    cmds:
+      - |
+        current_forward_pid=$(ps -ef | grep "^$USER" | grep "{{.pub_ports}}" | grep 'kubectl' | awk '{print $2}')
+        [[ ! -z "${current_forward_pid}" ]] && { kill ${current_forward_pid}; echo "Killed currently running forward"; }
+        nohup kubectl -n {{.namespace}} port-forward svc/{{.service_name}} {{.pub_ports}} --address='0.0.0.0' > $(mktemp) 2>&1 &
+        echo "Created a tunnel to service {{.service_name}}"
+
+  docker-build:
+    desc: "Build a Docker image with the application."
+    status: ["none"]
+    cmds:
+      - '{{.CONTAINER_TOOL}} build . -t {{.IMAGE_NAME}}'
+
+  docker-push:
+    desc: "Push the Docker image to a registry."
+    status: ["none"]
+    cmds:
+      - '{{.CONTAINER_TOOL}} push {{.IMAGE_NAME}}'
+      - task: update-kustomize-image
+
+  kind-load:
+    desc: "Load the Docker image into a kind cluster."
+    status: ["none"]
+    cmds:
+      - kind load docker-image {{.IMAGE_NAME}} --name {{.KIND_CLUSTER_NAME}}
+      - sleep 2
+
+  update-kustomize-image:
+    desc: "Update the image tag in kubernetes/overlays/local/kustomization.yaml"
+    status: ["none"]
+    cmds:
+      - 'kustomize edit set image {{.IMAGE_TAG_BASE}}={{.IMAGE_NAME}}'
+      - 'kustomize edit set label "release:{{.VERSION}}"'
+    dir: kubernetes/overlays/local
+
+  apply-kubernetes:
+    desc: "Apply Kubernetes manifests in kubernetes/overlays/local"
+    status: ["none"]
+    cmds:
+      - kubectl apply -k kubernetes/overlays/local
+
+  undeploy-kubernetes:
+    desc: "Delete kubernetes/overlays/local from kubernetes"
+    status: ["none"]
+    cmds:
+      - 'kubectl delete -k kubernetes/overlays/local || true' 
+
+  local-release:
+    desc: "Build container, load to kind, update image in Kustomize, and apply the Kubernetes manifests"
+    status: ["none"]
+    cmds:
+      - task: test
+      - task: docker-build
+      - task: docker-push
+      - task: undeploy-kubernetes
+      - task: update-kustomize-image
+      - task: apply-kubernetes

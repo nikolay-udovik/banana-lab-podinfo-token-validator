@@ -1,0 +1,15 @@
+log:
+  level: debug
+  format: json
+
+podinfo:
+  base_url: "http://localhost:29898"
+  token_endpoint: "/token"
+  token_validate: "/token/validate"
+  cache_endpoint: "/cache/validation_result"
+
+redis:
+  host: "localhost"
+  port: 26379
+  password: ""
+  validation_result_key: "validation_result"
