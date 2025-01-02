@@ -6,7 +6,7 @@ resources:
 images:
 - name: podinfo-token-validator
   newName: docker.io/drunkymonke/podinfo-token-validator
-  newTag: 0.0.2
+  newTag: 0.0.3
 
 patches:
 - patch: |
@@ -29,4 +29,4 @@ generatorOptions:
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 commonLabels:
-  release: 0.0.2
+  release: 0.0.3

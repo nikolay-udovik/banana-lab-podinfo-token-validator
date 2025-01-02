@@ -1,7 +1,7 @@
 version: '3'
 
 vars:
-  VERSION: 0.0.2
+  VERSION: 0.0.3
   PROJECT_NAME: podinfo-token-validator
   IMAGE_TAG_BASE: podinfo-token-validator
   REGISTRY: docker.io
@@ -28,12 +28,10 @@ tasks:
     desc: "Run the application in the background and execute tests."
     status: ["none"]
     cmds:
-      - task: podinfo-port-fwd-redis
-      - task: podinfo-port-fwd-back
+      - task: podinfo-port-fwd
       - task: coverage
       - pid=$(go run cmd/main.go & echo $!); echo "App running with PID $pid"
       - go test -v ./...
-    #  - kill -9 $pid &> /dev/null || { true; echo test has completed; }
 
   clean:
     desc: "Remove binary files and clean up."
@@ -58,8 +56,7 @@ tasks:
     desc: "Run the main.go file."
     status: ["none"]
     cmds:
-      - task: podinfo-port-fwd-redis
-      - task: podinfo-port-fwd-back
+      - task: podinfo-port-fwd
       - go run cmd/main.go
 
   podinfo-port-fwd-redis:
@@ -76,13 +73,6 @@ tasks:
         nohup kubectl -n {{.namespace}} port-forward svc/{{.service_name}} {{.pub_ports}} --address='0.0.0.0' > $(mktemp) 2>&1 &
         echo "Created a tunnel to service {{.service_name}}"
 
-  podinfo-redis-cli:
-    desc: "Verify Redis connection using redis-cli."
-    cmds:
-      - task: podinfo-port-fwd-redis
-      - sleep 3
-      - redis-cli -h 127.0.0.1 -p 26379
-
   podinfo-port-fwd-back:
     desc: "Port-forward Podinfo service in the background."
     status: ["none"]
@@ -96,6 +86,21 @@ tasks:
         [[ ! -z "${current_forward_pid}" ]] && { kill ${current_forward_pid}; echo "Killed currently running forward"; }
         nohup kubectl -n {{.namespace}} port-forward svc/{{.service_name}} {{.pub_ports}} --address='0.0.0.0' > $(mktemp) 2>&1 &
         echo "Created a tunnel to service {{.service_name}}"
+
+  podinfo-port-fwd:
+    desc: "Port-forward Podinfo releated servoes"
+    status: ["none"]
+    cmds:
+      - task: podinfo-port-fwd-back
+      - task: podinfo-port-fwd-redis
+      - sleep 1
+      
+  podinfo-redis-cli:
+    desc: "Verify Redis connection using redis-cli."
+    cmds:
+      - task: podinfo-port-fwd-redis
+      - sleep 3
+      - redis-cli -h 127.0.0.1 -p 26379
 
   docker-build:
     desc: "Build a Docker image with the application."
@@ -144,6 +149,4 @@ tasks:
       - task: test
       - task: docker-build
       - task: docker-push
-      - task: undeploy-kubernetes
       - task: update-kustomize-image
-      - task: apply-kubernetes

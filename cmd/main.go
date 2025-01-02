@@ -77,9 +77,9 @@ func main() {
 	logger.Sugar.Infof("Key '%s' exists in Redis.", key)
 
 	// Retrieve the value
-	val, err := rdb.GetValue(key)
+	_, err = rdb.GetValue(key) // Use `=` instead of `:=`
 	if err != nil {
 		logger.Sugar.Fatalf("Failed to retrieve value for key '%s': %v", key, err)
 	}
-	logger.Sugar.Infof("Cached validation result retrieved successfully: %s", val)
+	logger.Sugar.Infof("Cached validation result retrieved successfully for key '%s'.", key)
 }
