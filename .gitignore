@@ -15,7 +15,7 @@ Dockerfile.cross
 
 # editor and IDE paraphernalia
 .idea
-.vscode
+.vscode/*
 !.vscode/launch.json
 *.swp
 *.swo

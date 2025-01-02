@@ -1,0 +1,18 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "name": "Launch Go App",
+        "type": "go",
+        "request": "launch",
+        "mode": "auto",
+        "program": "${workspaceFolder}/cmd/main.go",
+        "args": ["-config", "${workspaceFolder}/internal/config/config.yaml"],
+        "env": {
+          "CGO_CFLAGS": "-Wno-error"
+        },
+        "cwd": "${workspaceFolder}",
+        "console": "integratedTerminal"
+      }
+    ]
+}
