@@ -14,7 +14,8 @@
       "complete -F __start_kubectl k",
       "alias ksetns='kubectl config set-context --current --namespace'",
       "source <(kubectl completion zsh)",
-      "source <(kustomize completion zsh)"
+      "source <(kustomize completion zsh)",
+      "unset REDIS_CONF && unset REDIS_PORT"
     ]
   }
 }
