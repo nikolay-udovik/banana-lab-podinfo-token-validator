@@ -15,7 +15,7 @@ patches:
     metadata:
       name: podinfo-token-validator
     spec:
-      schedule: "*/1 * * * *"
+      schedule: "*/5 * * * *"
 
 configMapGenerator:
 - behavior: replace
