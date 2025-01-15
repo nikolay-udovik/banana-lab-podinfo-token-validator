@@ -18,7 +18,7 @@ Managing dependencies is done using NixOS+Devbox. While Devbox is recommended fo
 * Docker/Podman
 * The project uses a `Taskfile` to streamline development workflow. `task` is a modern alternative to `Make`. Install `task` to execute predefined commands, such as building the app, tests, and deploying to kubernetes.
 * This project relies on the **Podinfo app** being pre-installed in the Kubernetes cluster. Ensure that the Podinfo service is running and accessible before deploying or running this application.
-* Access to the `bringg-local` (Kind) Kubernetes cluster. Devbox ensures the correct `KUBECONFIG` is exported for this purpose.
+* Access to the `banana-lab-local` (Kind) Kubernetes cluster. Devbox ensures the correct `KUBECONFIG` is exported for this purpose.
 
 ### Configuration
 
@@ -72,7 +72,7 @@ This project uses a Taskfile to automate common workflows. Here’s how you can 
 * **Container Deployment:**
 
    * Use `task docker-push` to push the Docker image to a registry.
-   * Alternatively, use `task kind-load` to load the image directly into `bringg-local` (kind) cluster.
+   * Alternatively, use `task kind-load` to load the image directly into `banana-lab-local` (kind) cluster.
 
 * **Podinfo Integration:**
 

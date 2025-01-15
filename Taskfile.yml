@@ -8,7 +8,7 @@ vars:
   DOCKER_USER: drunkymonke
   IMAGE_NAME: '{{.REGISTRY}}/{{.DOCKER_USER}}/{{.IMAGE_TAG_BASE}}:{{.VERSION}}'
   CONTAINER_TOOL: docker
-  KIND_CLUSTER_NAME: bringg-local
+  KIND_CLUSTER_NAME: banana-lab-local
   GOBIN: '{{if .GOBIN}}{{.GOBIN}}{{else}}{{.GOPATH}}bin{{end}}'
   MODULE_NAME: monkale.io/{{.PROJECT_NAME}}
   BINARY_NAME: app
